@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -7,16 +8,36 @@
   <style>
     body {
       font-family: "微軟正黑體", sans-serif;
-      background-color: #fff7e6;
       text-align: center;
       padding: 30px;
+      background-repeat: no-repeat;
+      background-size: contain;
+      background-position: center;
+      transition: background-image 1s ease-in-out;
+      position: relative;
+      z-index: 0;
     }
-    #story {
-      margin: 30px 0;
-      font-size: 1.5em;
-      min-height: 180px;
-      color: #333;
+    .game-container {
+      background-color: rgba(255, 255, 255, 0.85);
+      border-radius: 16px;
+      padding: 20px;
+      display: inline-block;
+      max-width: 900px;
     }
+    
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.75);
+      z-index: -1;
+      pointer-events: none;
+    }
+    
+    
     #alphabet {
       display: flex;
       flex-wrap: wrap;
@@ -68,7 +89,6 @@
       right: 10px;
       z-index: 100;
     }
-
     .envelope {
       background: #fffbe6;
       border: 2px solid #ffd666;
@@ -77,13 +97,10 @@
       text-align: left;
       animation: fadeIn 1s ease forwards;
     }
-
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(30px); }
       to { opacity: 1; transform: translateY(0); }
     }
-
-    /* 信件遮罩與彈窗 */
     #overlay {
       position: fixed;
       top: 0;
@@ -97,7 +114,6 @@
       justify-content: center;
       animation: fadeIn 0.6s ease-in-out;
     }
-
     #letterModal {
       background-color: #fffef0;
       border-radius: 16px;
@@ -107,65 +123,69 @@
       box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
       animation: slideUp 0.6s ease-out;
     }
-
     @keyframes slideUp {
-      from {
-        transform: translateY(80px);
-        opacity: 0;
-      }
-      to {
-        transform: translateY(0px);
-        opacity: 1;
-      }
+      from { transform: translateY(80px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .bg-container {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: -1;
+      overflow: hidden;
+    }
+    .bg-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center center;
+      transition: opacity 1s ease-in-out;
+      opacity: 1;
     }
   </style>
 </head>
 <body>
-
-  <!-- 🎵 音樂播放器 -->
+  <div class="bg-container">
+    <img id="bgImage" src="images/bg1.jpg" alt="背景圖">
+  </div>
   <audio id="bgm" src="music1.mp3" loop></audio>
   <button id="musicControl" onclick="toggleMusic()">🔈 音樂</button>
-
+  <div class="game-container">
   <h1>🎓 馬來西亞回憶小遊戲 ✧</h1>
-
-  <div id="story">
-    第 <span id="questionNumber">1</span> 題：請依回憶選擇正確的答案<br>
-    <small style="color: gray;">（請點右上角🔈播放音樂）</small>
+  
+<div id="progressContainer" style="width: 100%; max-width: 900px; margin: 20px auto;">
+  <div id="progressBar" style="height: 20px; background: #ffe58f; border-radius: 10px; overflow: hidden;">
+    <div id="progressFill" style="height: 100%; width: 0%; background: #fa541c; transition: width 0.5s;"></div>
   </div>
+</div>
 
+<div id="story"></div>
   <div id="alphabet"></div>
-
   <div>
     <button onclick="submitMulti()">提交答案</button>
     <button onclick="resetMulti()">重新選擇</button>
   </div>
-
+  </div>
   <div id="letterContainer" style="display: none;"></div>
-
-  <!-- ✉️ 信件遮罩彈窗 -->
   <div id="overlay">
     <div id="letterModal">
       <div class="envelope">
         <h3 style="color:#d46b08;">💌 給學長姐的一封信</h3>
         <p>親愛的學長姐們：</p>
-        <p>
-          真的很感謝你們，不管是在馬來西亞、在東港，<br>
-          還是我生日的時候，你們都很照顧我，<br>
-          讓我感受到人心的溫暖、也留下珍貴的回憶。
-        </p>
+        <p>真的很感謝你們，不管是在馬來西亞、在東港，還是我生日的時候，你們都很照顧我，讓我感受到人心的溫暖、也留下珍貴的回憶。</p>
         <pre style="font-family: inherit; white-space: pre-wrap;">
 祝你們在未來的路上都能<strong>馬</strong>到成功，
                 不畏困難好機會<strong>來</strong>者不拒，
                 忙碌之餘常有閒<strong>西</strong>窗剪燭，
-最後祝不管立春夏至立秋<strong>亞</strong>歲四季都好！
+最後祝不管春分夏至秋分<strong>亞</strong>歲四季都好！
         </pre>
         <p style="text-align: right; margin-top: 30px;">學弟 楊竣傑 敬上</p>
-        <button onclick="closeLetter()">關閉信件</button>
+        <div style="text-align: center;"><button onclick="closeLetter()">關閉信件</button></div>
       </div>
     </div>
   </div>
-
   <script>
+
     const questions = [
       {
         type: 'normal',
@@ -222,6 +242,12 @@
     let currentQuestion = 0;
     let selectedLetters = [];
     let finalResult = [];
+
+    
+      function updateProgress() {
+        const progress = ((currentQuestion) / questions.length) * 100;
+        document.getElementById("progressFill").style.width = progress + "%";
+      }
 
     function generateButtons(hintText = null) {
       const alphabetContainer = document.getElementById('alphabet');
@@ -290,7 +316,19 @@
         selectedLetters = [];
 
         if (currentQuestion < questions.length) {
-          generateButtons();
+          let currentBgIndex = 1;
+const totalBgs = 8;
+
+function rotateBackground() {
+  document.getElementById('bgImage').src = `images/bg${currentBgIndex}.jpg`;
+  currentBgIndex = (currentBgIndex % totalBgs) + 1;
+}
+
+rotateBackground();
+setInterval(rotateBackground, 5000);
+
+generateButtons();
+      updateProgress();
         } else {
           document.getElementById('story').innerHTML = `
             🎉 恭喜完成回憶挑戰！<br><br>
@@ -301,6 +339,7 @@
             <button onclick="restart()">重新挑戰</button>
           `;
           document.getElementById('alphabet').innerHTML = '';
+          updateProgress();
           document.querySelectorAll("button").forEach(btn => {
             if (btn.innerText.includes("提交") || btn.innerText.includes("重新選擇")) {
               btn.style.display = "none";
@@ -316,7 +355,19 @@
 
     function resetMulti() {
       selectedLetters = [];
-      generateButtons();
+      let currentBgIndex = 1;
+const totalBgs = 8;
+
+function rotateBackground() {
+  document.getElementById('bgImage').src = `images/bg${currentBgIndex}.jpg`;
+  currentBgIndex = (currentBgIndex % totalBgs) + 1;
+}
+
+rotateBackground();
+setInterval(rotateBackground, 5000);
+
+generateButtons();
+      updateProgress();
     }
 
     function restart() {
@@ -326,7 +377,19 @@
       document.querySelectorAll("button").forEach(btn => btn.style.display = "inline-block");
       document.getElementById("letterContainer").style.display = "none";
       document.getElementById("overlay").style.display = "none";
-      generateButtons();
+      let currentBgIndex = 1;
+const totalBgs = 8;
+
+function rotateBackground() {
+  document.getElementById('bgImage').src = `images/bg${currentBgIndex}.jpg`;
+  currentBgIndex = (currentBgIndex % totalBgs) + 1;
+}
+
+rotateBackground();
+setInterval(rotateBackground, 5000);
+
+generateButtons();
+      updateProgress();
     }
 
     function toggleMusic() {
@@ -367,7 +430,20 @@
       }
     });
 
-    generateButtons();
-  </script>
+    let currentBgIndex = 1;
+const totalBgs = 8;
+
+function rotateBackground() {
+  document.getElementById('bgImage').src = `images/bg${currentBgIndex}.jpg`;
+  currentBgIndex = (currentBgIndex % totalBgs) + 1;
+}
+
+rotateBackground();
+setInterval(rotateBackground, 5000);
+
+generateButtons();
+      updateProgress();
+  
+</script>
 </body>
 </html>
